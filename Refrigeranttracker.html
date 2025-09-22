@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refrigerant Leak Rate Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .modal {
+            display: none; /* Hidden by default */
+        }
+        .modal.show {
+            display: flex; /* Show when 'show' class is added */
+        }
+        /* Custom scrollbar */
+        .history-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .history-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        .history-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .tab-active {
+            border-color: #3b82f6;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-6 lg:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900">Refrigerant Leak Rate Tracker</h1>
+            <p class="text-lg text-gray-600 mt-2">A CRM and compliance tool for HVAC contractors.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Navigation & Lists -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-lg">
+                <div class="border-b border-gray-200 mb-4">
+                    <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                        <button id="customersTab" class="tab-active whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">Customers</button>
+                        <button id="systemsTab" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">All Systems</button>
+                    </nav>
+                </div>
+                
+                <!-- Customers View -->
+                <div id="customersView">
+                    <button id="addCustomerBtn" class="w-full mb-4 bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-300 font-semibold">Add New Customer</button>
+                    <div id="customerList" class="space-y-2 max-h-96 overflow-y-auto history-scroll pr-2">
+                        <p class="text-gray-500 text-center" id="noCustomersText">No customers added yet.</p>
+                    </div>
+                </div>
+
+                <!-- Systems View -->
+                <div id="systemsView" class="hidden">
+                    <button id="addSystemBtn" class="w-full mb-4 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">Add New System</button>
+                    <div id="systemList" class="space-y-2 max-h-96 overflow-y-auto history-scroll pr-2">
+                        <p class="text-gray-500 text-center" id="noSystemsText">No systems added yet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Selected Item Details -->
+            <div id="systemDetailsContainer" class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg hidden">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 id="systemName" class="text-3xl font-bold"></h2>
+                        <p id="customerName" class="text-lg text-indigo-600 font-semibold"></p>
+                        <p id="systemInfo" class="text-md text-gray-500 mt-1"></p>
+                    </div>
+                     <button id="deleteSystemBtn" class="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300 font-semibold">Delete System</button>
+                </div>
+
+                <!-- Leak Rate & Status -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div id="leakRateCard" class="p-6 rounded-xl">
+                        <h3 class="text-lg font-medium text-white">Annualized Leak Rate</h3>
+                        <p id="leakRate" class="text-5xl font-bold text-white">0.00%</p>
+                    </div>
+                    <div id="statusCard" class="p-6 rounded-xl flex items-center justify-center">
+                         <div>
+                            <h3 class="text-lg font-medium text-white">Status</h3>
+                            <p id="leakStatus" class="text-3xl font-bold text-white">Calculating...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Refrigerant Form -->
+                <div class="mb-6 bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-xl font-semibold mb-3">Log Refrigerant Addition</h3>
+                    <form id="addRefrigerantForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="dateAdded" class="block text-sm font-medium text-gray-700">Date Added</label>
+                            <input type="date" id="dateAdded" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label for="amountAdded" class="block text-sm font-medium text-gray-700">Amount Added (lbs)</label>
+                            <input type="number" id="amountAdded" step="0.01" min="0.01" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-2">
+                             <label for="serviceNotes" class="block text-sm font-medium text-gray-700">Service Notes</label>
+                             <textarea id="serviceNotes" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., Repaired leak on liquid line service valve."></textarea>
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition duration-300 font-semibold">Log Addition</button>
+                        </div>
+                    </form>
+                </div>
+                
+                 <!-- Addition History and Chart -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-xl font-semibold mb-3">Addition History</h3>
+                        <div id="additionHistory" class="space-y-3 max-h-60 overflow-y-auto history-scroll pr-2">
+                             <p class="text-gray-500 text-center" id="noAdditionsText">No additions logged yet.</p>
+                        </div>
+                    </div>
+                    <div>
+                         <h3 class="text-xl font-semibold mb-3">Refrigerant Added Over Time</h3>
+                         <canvas id="additionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="welcomeMessage" class="lg:col-span-2 bg-white p-8 rounded-2xl shadow-lg flex flex-col items-center justify-center text-center">
+                 <svg class="w-16 h-16 text-blue-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V7a2 2 0 012-2h5l4 4v11a2 2 0 01-2 2z"></path></svg>
+                 <h2 class="text-2xl font-bold mb-2">Welcome to Your Tracker</h2>
+                 <p class="text-gray-600">Please add a customer or system to get started, or select an existing item from the left to view its details.</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="systemModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-2xl font-semibold mb-6">Add New System</h2>
+            <form id="addSystemForm">
+                 <div class="mb-4">
+                    <label for="customerSelect" class="block text-sm font-medium text-gray-700">Assign to Customer</label>
+                    <select id="customerSelect" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+                </div>
+                <div class="mb-4">
+                    <label for="systemNameInput" class="block text-sm font-medium text-gray-700">System Name</label>
+                    <input type="text" id="systemNameInput" placeholder="e.g., Rooftop Unit #1" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label for="refrigerantType" class="block text-sm font-medium text-gray-700">Refrigerant Type</label>
+                    <select id="refrigerantType" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option>R-22</option><option>R-410A</option><option>R-134a</option><option>R-404A</option><option>R-407C</option><option>R-32</option><option>R-1234yf</option><option>Other</option>
+                    </select>
+                </div>
+                <div class="mb-6">
+                    <label for="fullCharge" class="block text-sm font-medium text-gray-700">Full Charge (lbs)</label>
+                    <input type="number" id="fullCharge" step="0.1" min="0.1" placeholder="e.g., 50.5" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" class="cancelBtn bg-gray-300 text-gray-800 py-2 px-6 rounded-lg hover:bg-gray-400 transition">Cancel</button>
+                    <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-lg hover:bg-blue-700 transition">Save System</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div id="customerModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+            <h2 class="text-2xl font-semibold mb-6">Add New Customer</h2>
+            <form id="addCustomerForm">
+                <div class="mb-4">
+                    <label for="customerNameInput" class="block text-sm font-medium text-gray-700">Customer Name</label>
+                    <input type="text" id="customerNameInput" placeholder="e.g., John Smith or Main Street Mall" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                </div>
+                <div class="mb-4">
+                    <label for="customerAddressInput" class="block text-sm font-medium text-gray-700">Address</label>
+                    <input type="text" id="customerAddressInput" placeholder="e.g., 123 Main St, Anytown, USA" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                </div>
+                <div class="mb-6">
+                    <label for="customerContactInput" class="block text-sm font-medium text-gray-700">Contact Info</label>
+                    <input type="text" id="customerContactInput" placeholder="e.g., 555-123-4567 or manager@email.com" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                </div>
+                <div class="flex justify-end space-x-4">
+                    <button type="button" class="cancelBtn bg-gray-300 text-gray-800 py-2 px-6 rounded-lg hover:bg-gray-400 transition">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-indigo-700 transition">Save Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, onSnapshot, deleteDoc, query, orderBy, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- App State ---
+        let app, auth, db;
+        let userId = null;
+        let appId;
+        let currentSystemId = null;
+        let currentCustomerId = null;
+        let systemsUnsubscribe = null;
+        let customersUnsubscribe = null;
+        let additionsUnsubscribe = null;
+        let additionsChart = null;
+        let allCustomers = [];
+
+        // --- DOM Elements ---
+        const customersTab = document.getElementById('customersTab');
+        const systemsTab = document.getElementById('systemsTab');
+        const customersView = document.getElementById('customersView');
+        const systemsView = document.getElementById('systemsView');
+        const addCustomerBtn = document.getElementById('addCustomerBtn');
+        const customerModal = document.getElementById('customerModal');
+        const addCustomerForm = document.getElementById('addCustomerForm');
+        const customerList = document.getElementById('customerList');
+        const noCustomersText = document.getElementById('noCustomersText');
+
+        const addSystemBtn = document.getElementById('addSystemBtn');
+        const systemModal = document.getElementById('systemModal');
+        const addSystemForm = document.getElementById('addSystemForm');
+        const systemList = document.getElementById('systemList');
+        const noSystemsText = document.getElementById('noSystemsText');
+        const customerSelect = document.getElementById('customerSelect');
+        
+        const systemDetailsContainer = document.getElementById('systemDetailsContainer');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const systemName = document.getElementById('systemName');
+        const customerName = document.getElementById('customerName');
+        const systemInfo = document.getElementById('systemInfo');
+        const deleteSystemBtn = document.getElementById('deleteSystemBtn');
+        
+        const leakRateCard = document.getElementById('leakRateCard');
+        const statusCard = document.getElementById('statusCard');
+        const leakRateEl = document.getElementById('leakRate');
+        const leakStatusEl = document.getElementById('leakStatus');
+        
+        const addRefrigerantForm = document.getElementById('addRefrigerantForm');
+        const dateAddedInput = document.getElementById('dateAdded');
+        const additionHistory = document.getElementById('additionHistory');
+        const noAdditionsText = document.getElementById('noAdditionsText');
+
+        // --- Initialization ---
+        async function initializeAndAuthenticate() {
+            try {
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                onAuthStateChanged(auth, user => {
+                    if (user) {
+                        userId = user.uid;
+                        loadCustomers();
+                        loadSystems();
+                    } else {
+                        userId = null;
+                        if (systemsUnsubscribe) systemsUnsubscribe();
+                        if (customersUnsubscribe) customersUnsubscribe();
+                        // Clear UI
+                    }
+                });
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                document.querySelector('header p').textContent = 'Error: Could not connect to the database. Please refresh.';
+                document.querySelector('header p').classList.add('text-red-500');
+            }
+        }
+        
+        // --- Customer Management ---
+        function loadCustomers() {
+            if (!userId || !appId) return;
+            const customersRef = collection(db, "artifacts", appId, "users", userId, "customers");
+            const q = query(customersRef, orderBy("name"));
+
+            if (customersUnsubscribe) customersUnsubscribe();
+            customersUnsubscribe = onSnapshot(q, (snapshot) => {
+                customerList.innerHTML = '';
+                allCustomers = [];
+                if (snapshot.empty) {
+                    customerList.appendChild(noCustomersText);
+                } else {
+                    snapshot.forEach(doc => {
+                        const customerData = { id: doc.id, ...doc.data() };
+                        allCustomers.push(customerData);
+                        renderCustomerInList(customerData);
+                    });
+                }
+                populateCustomerDropdown();
+            });
+        }
+
+        function renderCustomerInList(data) {
+            const div = document.createElement('div');
+            div.className = `p-3 rounded-lg cursor-pointer transition ${currentCustomerId === data.id ? 'bg-indigo-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`;
+            div.textContent = data.name;
+            div.dataset.id = data.id;
+            div.addEventListener('click', () => {
+                document.querySelectorAll('#customerList > div').forEach(el => {
+                    el.classList.remove('bg-indigo-500', 'text-white');
+                    el.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                });
+                div.classList.add('bg-indigo-500', 'text-white');
+                div.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+                
+                currentCustomerId = data.id;
+                currentSystemId = null;
+                systemsTab.click();
+                systemDetailsContainer.classList.add('hidden');
+                welcomeMessage.classList.remove('hidden');
+                loadSystems(); // Reload systems for this customer
+            });
+            customerList.appendChild(div);
+        }
+
+        async function handleAddCustomer(e) {
+            e.preventDefault();
+            if(!userId || !appId) return;
+            const newCustomer = {
+                name: document.getElementById('customerNameInput').value,
+                address: document.getElementById('customerAddressInput').value,
+                contact: document.getElementById('customerContactInput').value
+            };
+            try {
+                const customersRef = collection(db, "artifacts", appId, "users", userId, "customers");
+                await addDoc(customersRef, newCustomer);
+                closeModal(customerModal);
+            } catch (error) {
+                console.error("Error adding customer: ", error);
+            }
+        }
+
+        function populateCustomerDropdown() {
+            customerSelect.innerHTML = '<option value="">Select a customer...</option>';
+            allCustomers.forEach(cust => {
+                const option = document.createElement('option');
+                option.value = cust.id;
+                option.textContent = cust.name;
+                customerSelect.appendChild(option);
+            });
+        }
+
+        // --- System Management ---
+        function loadSystems() {
+            if (!userId || !appId) return;
+            
+            let systemsRef = collection(db, "artifacts", appId, "users", userId, "systems");
+            let q;
+
+            if (currentCustomerId) {
+                // Remove orderBy from query to avoid composite index requirement
+                q = query(systemsRef, where("customerId", "==", currentCustomerId));
+            } else {
+                q = query(systemsRef, orderBy("name"));
+            }
+
+            if (systemsUnsubscribe) systemsUnsubscribe();
+
+            systemsUnsubscribe = onSnapshot(q, (snapshot) => {
+                systemList.innerHTML = ''; // Clear list
+                if (snapshot.empty) {
+                    systemList.appendChild(noSystemsText);
+                } else {
+                     // If we filtered by customer, sort the results on the client-side
+                    if (currentCustomerId) {
+                        const systems = [];
+                        snapshot.forEach(doc => {
+                            systems.push({ id: doc.id, ...doc.data() });
+                        });
+                        // Sort by name alphabetically
+                        systems.sort((a, b) => a.name.localeCompare(b.name));
+                        systems.forEach(system => {
+                            renderSystemInList(system.id, system);
+                        });
+                    } else { // Otherwise, Firestore has already sorted for us
+                        snapshot.forEach(doc => {
+                            renderSystemInList(doc.id, doc.data());
+                        });
+                    }
+                }
+            }, error => {
+                console.error("Error loading systems: ", error);
+            });
+        }
+        
+        function renderSystemInList(id, data) {
+            const div = document.createElement('div');
+            div.className = `p-3 rounded-lg cursor-pointer transition ${currentSystemId === id ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-gray-300'}`;
+            div.innerHTML = `<p class="font-semibold">${data.name}</p><p class="text-sm ${currentSystemId === id ? 'text-blue-200' : 'text-gray-500'}">${data.customerName || 'No Customer'}</p>`;
+            div.dataset.id = id;
+            div.addEventListener('click', () => {
+                document.querySelectorAll('#systemList > div, #customerList > div').forEach(el => {
+                    el.classList.remove('bg-blue-500', 'text-white', 'bg-indigo-500');
+                    if(el.parentElement.id === 'systemList') el.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                    if(el.parentElement.id === 'customerList') el.classList.add('bg-gray-200', 'hover:bg-gray-300');
+                });
+                div.classList.add('bg-blue-500', 'text-white');
+                div.classList.remove('bg-gray-200', 'hover:bg-gray-300');
+                selectSystem(id);
+            });
+            systemList.appendChild(div);
+        }
+
+        async function handleAddSystem(e) {
+            e.preventDefault();
+            if (!userId || !appId) return;
+            const selectedCustomerId = customerSelect.value;
+            const selectedCustomer = allCustomers.find(c => c.id === selectedCustomerId);
+
+            const newSystem = {
+                name: document.getElementById('systemNameInput').value,
+                refrigerantType: document.getElementById('refrigerantType').value,
+                fullCharge: parseFloat(document.getElementById('fullCharge').value),
+                customerId: selectedCustomerId,
+                customerName: selectedCustomer ? selectedCustomer.name : ""
+            };
+            try {
+                const systemsRef = collection(db, "artifacts", appId, "users", userId, "systems");
+                await addDoc(systemsRef, newSystem);
+                closeModal(systemModal);
+            } catch (error) {
+                console.error("Error adding system: ", error);
+            }
+        }
+
+        async function deleteSystem() {
+            if (!currentSystemId || !userId || !appId) return;
+            try {
+                const systemDocRef = doc(db, "artifacts", appId, "users", userId, "systems", currentSystemId);
+                await deleteDoc(systemDocRef);
+                currentSystemId = null;
+                systemDetailsContainer.classList.add('hidden');
+                welcomeMessage.classList.remove('hidden');
+            } catch (error) {
+                console.error("Error deleting system:", error);
+            }
+        }
+
+        function selectSystem(id) {
+            if (!userId || !appId) return;
+            currentSystemId = id;
+            systemDetailsContainer.classList.remove('hidden');
+            welcomeMessage.classList.add('hidden');
+            if (additionsUnsubscribe) additionsUnsubscribe();
+
+            const additionsRef = collection(db, "artifacts", appId, "users", userId, "systems", currentSystemId, "additions");
+            const q = query(additionsRef, orderBy("date", "asc"));
+
+            additionsUnsubscribe = onSnapshot(q, (snapshot) => {
+                const additions = [];
+                snapshot.forEach(doc => {
+                    additions.push({ id: doc.id, ...doc.data() });
+                });
+
+                const systemDocRef = doc(db, "artifacts", appId, "users", userId, "systems", currentSystemId);
+                onSnapshot(systemDocRef, (docSnap) => {
+                     if(docSnap.exists()){
+                        const systemData = docSnap.data();
+                        updateSystemDetailsUI(systemData, additions);
+                        calculateAndDisplayLeakRate(systemData.fullCharge, additions);
+                        updateAdditionsChart(additions);
+                     }
+                });
+
+            }, error => console.error("Error fetching additions:", error));
+        }
+        
+        function updateSystemDetailsUI(systemData, additions) {
+            systemName.textContent = systemData.name;
+            customerName.textContent = systemData.customerName || "No assigned customer";
+            systemInfo.textContent = `Type: ${systemData.refrigerantType} | Full Charge: ${systemData.fullCharge} lbs`;
+
+            additionHistory.innerHTML = '';
+            if (additions.length === 0) {
+                additionHistory.appendChild(noAdditionsText);
+            } else {
+                additions.slice().reverse().forEach(log => { // show most recent first
+                    const div = document.createElement('div');
+                    div.className = 'bg-gray-100 p-3 rounded-lg';
+                    div.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <span><strong>${log.amount} lbs</strong> added on ${log.date}</span>
+                            <button data-id="${log.id}" class="delete-addition-btn text-red-500 hover:text-red-700 text-xl font-bold">&times;</button>
+                        </div>
+                        ${log.notes ? `<p class="mt-2 text-sm text-gray-600 border-l-2 border-gray-300 pl-2">${log.notes}</p>` : ''}
+                    `;
+                    additionHistory.appendChild(div);
+                });
+            }
+        }
+
+        // --- Refrigerant Management ---
+        async function handleAddRefrigerant(e) {
+            e.preventDefault();
+            if (!currentSystemId || !userId || !appId) return;
+
+            const newAddition = {
+                date: dateAddedInput.value,
+                amount: parseFloat(document.getElementById('amountAdded').value),
+                notes: document.getElementById('serviceNotes').value
+            };
+
+            try {
+                const additionsRef = collection(db, "artifacts", appId, "users", userId, "systems", currentSystemId, "additions");
+                await addDoc(additionsRef, newAddition);
+                addRefrigerantForm.reset();
+                dateAddedInput.valueAsDate = new Date();
+            } catch (error) {
+                console.error("Error adding refrigerant log: ", error);
+            }
+        }
+        
+        async function deleteAddition(additionId) {
+             if (!currentSystemId || !additionId || !userId || !appId) return;
+             try {
+                const additionDocRef = doc(db, "artifacts", appId, "users", userId, "systems", currentSystemId, "additions", additionId);
+                await deleteDoc(additionDocRef);
+             } catch(error) {
+                 console.error("Error deleting addition:", error);
+             }
+        }
+
+        // --- Calculations & UI Updates ---
+        function calculateAndDisplayLeakRate(fullCharge, additions) {
+            if (additions.length < 1) {
+                updateLeakRateUI(0, 'OK');
+                return;
+            }
+            
+            const oneYearAgo = new Date();
+            oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+            const additionsInLastYear = additions.filter(a => new Date(a.date) >= oneYearAgo);
+            const totalAddedInLastYear = additionsInLastYear.reduce((sum, log) => sum + log.amount, 0);
+
+            if (fullCharge <= 0) {
+                 updateLeakRateUI(0, 'N/A');
+                 return;
+            }
+
+            const rate = (totalAddedInLastYear / fullCharge) * 100;
+            
+            let status = 'OK';
+            if (rate >= 10) status = 'High Leak';
+            if (rate >= 5 && rate < 10) status = 'Monitor';
+
+            updateLeakRateUI(rate, status);
+        }
+
+        function updateLeakRateUI(rate, status) {
+            leakRateEl.textContent = `${rate.toFixed(2)}%`;
+            leakStatusEl.textContent = status;
+
+            leakRateCard.className = 'p-6 rounded-xl'; // Reset
+            statusCard.className = 'p-6 rounded-xl flex items-center justify-center'; // Reset
+
+            if (status === 'OK') {
+                leakRateCard.classList.add('bg-green-500'); statusCard.classList.add('bg-green-600');
+            } else if (status === 'Monitor') {
+                leakRateCard.classList.add('bg-yellow-500'); statusCard.classList.add('bg-yellow-600');
+            } else if (status === 'High Leak') {
+                leakRateCard.classList.add('bg-red-500'); statusCard.classList.add('bg-red-600');
+            } else {
+                 leakRateCard.classList.add('bg-gray-500'); statusCard.classList.add('bg-gray-600');
+            }
+        }
+        
+        function updateAdditionsChart(additions) {
+            const ctx = document.getElementById('additionChart').getContext('2d');
+            const labels = additions.map(a => a.date);
+            const data = additions.map(a => a.amount);
+
+            if (additionsChart) additionsChart.destroy();
+
+            additionsChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Refrigerant Added (lbs)',
+                        data: data,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true }}, plugins: { legend: { display: false }}}
+            });
+        }
+
+        // --- UI & Modal Logic ---
+        function switchTab(activeTab) {
+            if (activeTab === 'customers') {
+                customersTab.classList.add('tab-active');
+                systemsTab.classList.remove('tab-active');
+                customersView.classList.remove('hidden');
+                systemsView.classList.add('hidden');
+                currentCustomerId = null; // reset filter
+                loadSystems();
+            } else { // systems
+                systemsTab.classList.add('tab-active');
+                customersTab.classList.remove('tab-active');
+                systemsView.classList.remove('hidden');
+                customersView.classList.add('hidden');
+            }
+        }
+        function openModal(modal) {
+            modal.querySelector('form').reset();
+            modal.classList.add('show');
+        }
+        function closeModal(modal) {
+            modal.classList.remove('show');
+        }
+
+        // --- Event Listeners ---
+        customersTab.addEventListener('click', () => switchTab('customers'));
+        systemsTab.addEventListener('click', () => switchTab('systems'));
+        addCustomerBtn.addEventListener('click', () => openModal(customerModal));
+        addSystemBtn.addEventListener('click', () => openModal(systemModal));
+        document.querySelectorAll('.cancelBtn').forEach(btn => btn.addEventListener('click', (e) => closeModal(e.target.closest('.modal'))));
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) closeModal(e.target);
+        });
+
+        addCustomerForm.addEventListener('submit', handleAddCustomer);
+        addSystemForm.addEventListener('submit', handleAddSystem);
+        addRefrigerantForm.addEventListener('submit', handleAddRefrigerant);
+        deleteSystemBtn.addEventListener('click', deleteSystem);
+        
+        additionHistory.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-addition-btn')) {
+                const additionId = e.target.dataset.id;
+                deleteAddition(additionId);
+            }
+        });
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            dateAddedInput.valueAsDate = new Date();
+            initializeAndAuthenticate();
+        });
+
+    </script>
+</body>
+</html>
+
