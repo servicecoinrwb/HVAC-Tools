@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HVAC/R Troubleshooting Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .troubleshooting-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .troubleshooting-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .pt-table th, .pt-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .pt-table th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="app" class="max-w-4xl mx-auto p-4 md:p-6">
+
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-700">HVAC/R Troubleshooting Guide</h1>
+            <p class="text-gray-600 mt-2">A quick reference tool for service technicians.</p>
+        </header>
+
+        <main id="main-content">
+            <!-- Home Screen -->
+            <div id="home-screen">
+                <div class="mb-6">
+                    <input type="text" id="search-bar" placeholder="Search for a problem (e.g., 'compressor won't start')" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                <div id="categories-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Categories will be injected here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Troubleshooting Screen -->
+            <div id="troubleshooting-screen" class="hidden bg-white p-6 rounded-lg shadow-lg">
+                 <div class="flex justify-between items-center mb-4">
+                    <button id="home-button" class="text-blue-600 hover:underline">&larr; Back to Categories</button>
+                    <h2 id="troubleshooting-title" class="text-2xl font-bold text-center flex-grow"></h2>
+                </div>
+                <div id="troubleshooting-content">
+                    <!-- Troubleshooting steps/solutions will be injected here -->
+                </div>
+            </div>
+
+             <!-- Reference Screen -->
+            <div id="reference-screen" class="hidden bg-white p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <button id="home-button-ref" class="text-blue-600 hover:underline">&larr; Back to Categories</button>
+                    <h2 id="reference-title" class="text-2xl font-bold text-center flex-grow"></h2>
+                </div>
+                <div id="reference-content" class="prose max-w-none">
+                    <!-- Reference content will be injected here -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>&copy; 2024 HVAC/R Service Tech Tools. For educational purposes only.</p>
+            <p>Always follow proper safety procedures and consult manufacturer's literature.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        const app = {
+            // --- DATA STORE ---
+            data: {
+                categories: {
+                    'no-cool': {
+                        title: 'System Not Cooling',
+                        description: 'AC is running but not providing enough or any cool air.',
+                        icon: '❄️'
+                    },
+                    'no-heat': {
+                        title: 'System Not Heating',
+                        description: 'Furnace or heat pump is not providing enough or any heat.',
+                        icon: '🔥'
+                    },
+                    'no-power': {
+                        title: 'No Power / Not Turning On',
+                        description: 'The entire system or one of the units is completely off.',
+                        icon: '⚡'
+                    },
+                    'refrigerant-gauges': {
+                        title: 'Refrigerant Diagnostics',
+                        description: 'Check Superheat, Subcooling, and use the PT Calculator.',
+                        icon: '🌡️'
+                    },
+                    'airflow-checks': {
+                        title: 'Airflow Checks',
+                        description: 'Measure temperature rise/drop to diagnose system airflow.',
+                        icon: '💨'
+                    },
+                    'strange-noises': {
+                        title: 'Unusual Noises',
+                        description: 'Squealing, grinding, banging, or rattling sounds from units.',
+                        icon: '🔊'
+                    },
+                    'leaking': {
+                        title: 'Water Leaking',
+                        description: 'Water pooling around the indoor or outdoor unit.',
+                        icon: '💧'
+                    },
+                     'electrical': {
+                        title: 'Electrical Basics',
+                        description: 'Learn multimeter usage and diagnose common electrical faults.',
+                        icon: '🔌'
+                    },
+                    'reference': {
+                        title: 'Quick Reference Charts',
+                        description: 'Pressure charts, wiring diagrams, and electrical testing info.',
+                        icon: '📊'
+                    }
+                },
+                troubleshootingTree: {
+                    'no-cool': {
+                        start: {
+                            question: "Check the basics first: Is the thermostat set to COOL and the setpoint below room temperature?",
+                            yes: "thermostat_ok",
+                            no: "solution_thermostat_setting"
+                        },
+                        thermostat_ok: {
+                            question: "Is the indoor unit's blower fan running?",
+                            yes: "indoor_fan_running",
+                            no: "solution_check_blower"
+                        },
+                        indoor_fan_running: {
+                            question: "Is the outdoor unit's fan and compressor running?",
+                            yes: "outdoor_unit_running",
+                            no: "solution_check_contactor_capacitor"
+                        },
+                        outdoor_unit_running: {
+                            question: "Feel the larger, insulated copper line at the outdoor unit. Is it cold and sweating?",
+                            yes: "solution_check_airflow",
+                            no: "solution_low_refrigerant"
+                        },
+                        solution_thermostat_setting: {
+                            isSolution: true,
+                            title: "Incorrect Thermostat Settings",
+                            details: [
+                                { type: 'header', content: 'Problem' },
+                                { type: 'text', content: 'The thermostat is not set correctly to call for cooling. This is a common oversight.' },
+                                { type: 'header', content: 'Solution Steps' },
+                                { type: 'list', items: [
+                                    "Ensure the thermostat is in 'COOL' mode.",
+                                    "Set the temperature several degrees below the current room temperature.",
+                                    "Make sure the fan is set to 'AUTO' or 'ON'.",
+                                    "Check if the thermostat has fresh batteries, if applicable."
+                                ]}
+                            ]
+                        },
+                         solution_check_blower: {
+                            isSolution: true,
+                            title: "Check Indoor Blower",
+                            details: [
+                                { type: 'header', content: 'Problem' },
+                                { type: 'text', content: "The indoor unit's blower is not running, so no air is being circulated." },
+                                { type: 'header', content: 'Potential Causes & Solutions' },
+                                { type: 'list', items: [
+                                    "<strong>Tripped Breaker:</strong> Check the breaker for the air handler/furnace.",
+                                    "<strong>Blower Motor:</strong> The motor may have failed. Check for power at the motor terminals. If power is present but it's not running, it needs replacement.",
+                                    "<strong>Motor Capacitor:</strong> A weak or failed capacitor can prevent the motor from starting. Test the capacitor with a multimeter.",
+                                    "<strong>Control Board:</strong> The control board may not be sending power to the motor. Check for signals from the board."
+                                ]},
+                                { type: 'safety', content: 'Disconnect all power before inspecting electrical components.'}
+                            ]
+                        },
+                        solution_check_contactor_capacitor: {
+                            isSolution: true,
+                            title: "Check Outdoor Unit Contactor & Capacitor",
+                             details: [
+                                { type: 'header', content: 'Problem' },
+                                { type: 'text', content: "The outdoor unit (condenser) is not running, which is where heat is rejected." },
+                                { type: 'header', content: 'Troubleshooting Steps' },
+                                { type: 'list', items: [
+                                    "<strong>Check Disconnect/Breaker:</strong> Ensure power is on at the outdoor disconnect and the main panel.",
+                                    "<strong>Contactor:</strong> Check if the contactor is pulled in. If not, check for 24V at the coil. If 24V is present, the coil is bad. If the contactor is pitted/burnt, replace it.",
+                                    "<strong>Capacitor:</strong> A bulging or leaking run capacitor is a sure sign of failure. Test the capacitor with a multimeter; it should be within +/- 6% of its rated MFD.",
+                                    "<strong>Compressor/Fan Motor:</strong> If contactor and capacitor are good, check windings on the compressor and fan motor for shorts or grounds."
+                                ]},
+                                { type: 'safety', content: 'Capacitors can hold a dangerous charge. Discharge them safely before handling.'}
+                            ]
+                        },
+                        solution_check_airflow: {
+                           isSolution: true,
+                           title: "Check Airflow (Filter & Evaporator Coil)",
+                            details: [
+                                { type: 'header', content: 'Problem' },
+                                { type: 'text', content: "The system is mechanically cooling, but airflow is restricted, preventing cold air from reaching the space." },
+                                { type: 'header', content: 'Troubleshooting Steps' },
+                                { type: 'list', items: [
+                                    "<strong>Dirty Air Filter:</strong> This is the most common cause of poor cooling. Replace the filter if it's dirty.",
+                                    "<strong>Dirty/Frozen Evaporator Coil:</strong> If the filter has been neglected, the indoor coil can become impacted with dirt or freeze into a block of ice. A frozen coil often indicates an airflow issue or low refrigerant.",
+                                    "<strong>Blocked Vents:</strong> Ensure supply and return vents are open and not blocked by furniture or rugs.",
+                                    "<strong>Ductwork Issues:</strong> Collapsed or leaky ducts can cause significant cooling loss."
+                                ]}
+                            ]
+                        },
+                        solution_low_refrigerant: {
+                            isSolution: true,
+                            title: "Potential Refrigerant Charge Issue",
+                            details: [
+                                { type: 'header', content: 'Problem' },
+                                { type: 'text', content: "The large insulated line not being cold indicates the system is not absorbing heat properly, often due to an incorrect refrigerant charge." },
+                                { type: 'header', content: 'Diagnosis' },
+                                { type: 'list', items: [
+                                    "<strong>Low Refrigerant:</strong> The most likely cause is a refrigerant leak. This is often accompanied by a frozen evaporator coil or ice on the refrigerant lines.",
+                                    "<strong>Restriction:</strong> A restriction in the refrigerant circuit (e.g., clogged filter drier or TXV) can mimic low charge symptoms.",
+                                    "<strong>Inefficient Compressor:</strong> The compressor may be running but not pumping effectively due to worn valves."
+                                ]},
+                                { type: 'header', content: 'Solution' },
+                                { type: 'text', content: "Connect gauges to check superheat and subcooling. A proper diagnosis is required. If a leak is present, it must be located and repaired before recharging the system."},
+                                { type: 'safety', content: 'Handling refrigerant requires EPA 608 certification. Do not attempt without proper certification and tools.'}
+                            ]
+                        }
+                    },
+                    'no-heat': {
+                        start: {
+                            question: "What type of heating system do you have?",
+                            options: [
+                                { text: 'Gas Furnace', nextStep: 'gas_furnace_start' },
+                                { text: 'Heat Pump', nextStep: 'heat_pump_start' }
+                            ]
+                        },
+                        gas_furnace_start: {
+                            question: "Is the thermostat set to HEAT and the setpoint above room temperature?",
+                            yes: "furnace_inducer_check",
+                            no: "solution_thermostat_setting_heat"
+                        },
+                        furnace_inducer_check: {
+                            question: "When a call for heat begins, does the small inducer draft motor start?",
+                            yes: "furnace_igniter_check",
+                            no: "solution_check_inducer"
+                        },
+                        furnace_igniter_check: {
+                            question: "After the inducer runs for 30-60 seconds, does an igniter (hot surface glows orange, or a spark clicks) activate?",
+                            yes: "furnace_gas_valve_check",
+                            no: "solution_check_pressure_switch_igniter"
+                        },
+                        furnace_gas_valve_check: {
+                            question: "After the igniter activates, do you hear a 'click' from the gas valve and the main burners ignite?",
+                            yes: "furnace_flame_sensor_check",
+                            no: "solution_check_gas_valve"
+                        },
+                        furnace_flame_sensor_check: {
+                            question: "Do the burners stay lit for more than 10 seconds?",
+                            yes: "furnace_blower_check",
+                            no: "solution_check_flame_sensor"
+                        },
+                        furnace_blower_check: {
+                            question: "After the burners are on for 30-90 seconds, does the main indoor blower fan start distributing air?",
+                            yes: "solution_heat_misc_issues",
+                            no: "solution_check_furnace_blower_board"
+                        },
+                        heat_pump_start: {
+                            question: "Is the thermostat set to HEAT and the setpoint above room temperature?",
+                            yes: "hp_outdoor_unit_check",
+                            no: "solution_thermostat_setting_heat"
+                        },
+                        hp_outdoor_unit_check: {
+                            question: "Is the outdoor unit's fan and compressor running?",
+                            yes: "hp_reversing_valve_check",
+                            no: "solution_check_contactor_capacitor_heat"
+                        },
+                        hp_reversing_valve_check: {
+                            question: "Is the larger insulated copper line warm/hot to the touch? (Be careful)",
+                            yes: "solution_hp_airflow_check",
+                            no: "solution_check_reversing_valve_charge"
+                        },
+                        solution_thermostat_setting_heat: { isSolution: true, title: "Incorrect Thermostat Settings", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The thermostat is not set correctly to call for heating.' }, { type: 'header', content: 'Solution Steps' }, { type: 'list', items: ["Ensure the thermostat is in 'HEAT' mode.", "Set the temperature several degrees above the current room temperature.", "Check for fresh batteries."] }]},
+                        solution_check_inducer: { isSolution: true, title: "Check Inducer Motor", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The inducer motor is the first step in the ignition sequence. If it doesn\'t run, the furnace will not proceed to light.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>No power to motor:</strong> Check for 120V at the motor when heat is called. If no power, the control board may be bad.", "<strong>Failed Motor:</strong> If 120V is present but the motor only hums or doesn\'t spin, the motor has failed.", "<strong>Failed Capacitor:</strong> Some inducer motors have a run capacitor. Test it.", "<strong>Obstruction:</strong> Check the vent pipes for blockages (bird nests, ice, etc.)."] }, { type: 'safety', content: 'Disconnect power before testing electrical components.' }] },
+                        solution_check_pressure_switch_igniter: { isSolution: true, title: "Check Pressure Switch & Igniter", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The furnace is not attempting to ignite after the inducer starts.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Pressure Switch Stuck Open:</strong> This switch proves the inducer is working. Check for blocked vent pipes, water in the tubing, or a failed switch.", "<strong>Failed Igniter:</strong> Hot surface igniters can crack (check for hairline cracks) and fail. Spark igniters can have a failed module or cracked ceramic.", "<strong>Bad Control Board:</strong> The board may not be sending power to the igniter."] }, { type: 'safety', content: 'Hot surface igniters are fragile and can be damaged by touching them.' }] },
+                        solution_check_gas_valve: { isSolution: true, title: "Check Gas Valve", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The igniter is working, but the gas valve is not opening to let fuel reach the burners.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Gas Supply Off:</strong> Ensure the gas cock at the furnace and the gas meter are turned on.", "<strong>No 24V to Valve:</strong> Check for 24V at the gas valve terminals after the igniter is hot. If no voltage, the control board may be at fault.", "<strong>Failed Gas Valve:</strong> If 24V is present but the valve doesn't click open, the valve itself has failed."] }, { type: 'safety', content: 'If you smell gas, leave the area immediately and call your gas provider.' }] },
+                        solution_check_flame_sensor: { isSolution: true, title: "Clean or Replace Flame Sensor", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The burners light but go out after a few seconds. This is a safety feature because the furnace cannot "prove" a flame is present.' }, { type: 'header', content: 'Solution' }, { type: 'list', items: ["<strong>Dirty Flame Sensor:</strong> The most common cause. Locate the thin metal rod with a ceramic base, usually in the path of the last burner. Turn off power, remove the sensor (usually one screw), and gently clean the metal rod with fine steel wool or an emery cloth. Do not use sandpaper.", "<strong>Bad Electrical Connection:</strong> Ensure the wire to the sensor is secure.", "<strong>Failed Sensor:</strong> If cleaning does not work, the sensor may need to be replaced."], question: "Need to test the flame sensor current?", options: [{text: "Yes, show me how to test flame current", nextStep: "flame_sensor_current"}] }] },
+                        solution_check_furnace_blower_board: { isSolution: true, title: "Check Blower & Control Board", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The furnace heats up but the main blower doesn\'t turn on to circulate the air, causing the furnace to overheat and shut down on a high-limit safety.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["Failed Blower Motor or Capacitor (see 'System Not Cooling' guide).", "Failed Control Board or Fan Relay not sending power to the blower."] }] },
+                        solution_heat_misc_issues: { isSolution: true, title: "System Appears Normal but Not Enough Heat", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The furnace seems to be operating correctly but the house is not getting warm.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Dirty Air Filter:</strong> A clogged filter will severely restrict airflow, reducing heat output.", "<strong>Incorrect Gas Pressure:</strong> The gas valve may need adjustment by a qualified technician.", "<strong>Ductwork Issues:</strong> Leaky or undersized ducts."] }] },
+                        solution_check_contactor_capacitor_heat: { isSolution: true, title: "Check Outdoor Unit (Heat Pump)", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The outdoor heat pump unit is not running.' }, { type: 'text', content: "The troubleshooting is very similar to an AC unit. Please refer to the 'Check Outdoor Unit Contactor & Capacitor' solution in the 'System Not Cooling' section." }] },
+                        solution_check_reversing_valve_charge: { isSolution: true, title: "Check Reversing Valve & Refrigerant Charge", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The heat pump is running, but it is blowing cool air or not heating effectively.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Stuck Reversing Valve:</strong> The valve may be stuck in cooling mode. A technician can diagnose this by checking pressures and temperatures.", "<strong>Low Refrigerant Charge:</strong> Just like in cooling mode, a low charge will severely impact performance and can damage the compressor.", "<strong>Defrost Control Issue:</strong> The unit may be stuck in defrost mode."] }, { type: 'safety', content: 'Diagnosing refrigerant circuit issues requires proper certification and tools.' }] },
+                        solution_hp_airflow_check: { isSolution: true, title: "Check Airflow & Auxiliary Heat", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The heat pump is running and making heat, but the house is still cold.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Dirty Air Filter:</strong> Always the first check. Restricted airflow prevents heat from being transferred into the home.", "<strong>Auxiliary Heat Failure:</strong> On very cold days, the heat pump is supplemented by electric heat strips. If these aren't working, the heat pump can't keep up. Check breakers for the air handler and test sequencers and heat strips."] }] }
+                    },
+                    'no-power': {
+                        start: {
+                            question: "Does the thermostat have a blank screen?",
+                            yes: "thermostat_blank",
+                            no: "thermostat_has_power"
+                        },
+                        thermostat_blank: {
+                            question: "Is it a battery-powered thermostat? If so, have you replaced the batteries?",
+                            yes: "solution_replace_thermostat_batteries",
+                            no: "thermostat_hardwired"
+                        },
+                        thermostat_hardwired: {
+                            question: "Check the indoor unit's condensate drain pan or drain line for a float switch. Is the switch tripped (in the 'up' position)?",
+                            yes: "solution_condensate_float_switch",
+                            no: "solution_check_breaker_transformer"
+                        },
+                        thermostat_has_power: {
+                            question: "When you set the system to COOL or HEAT, does anything at all happen (any clicks, fans, or motors)?",
+                            yes: "solution_power_partial_failure",
+                            no: "solution_check_main_breakers_disconnects"
+                        },
+                        solution_replace_thermostat_batteries: { isSolution: true, title: "Replace Thermostat Batteries", details: [{ type: 'header', content: 'Solution' }, { type: 'text', content: 'For many thermostats with blank screens, the fix is simply to replace the batteries. Most use AA or AAA batteries.' }] },
+                        solution_condensate_float_switch: { isSolution: true, title: "Condensate Float Switch Tripped", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The condensate float switch is a safety device that shuts off the 24V power to the system if the drain line is clogged, preventing a water leak. This is a very common cause of a no-power situation.' }, { type: 'header', content: 'Solution' }, { type: 'list', items: ["Locate the float switch on the drain line or pan.", "If it is tripped, you must clear the clogged condensate drain line. Use a wet/dry vac on the exterior drain termination to suck the clog out.", "Once the line is clear and water has drained, the float will drop and power should be restored."] }] },
+                        solution_check_breaker_transformer: { isSolution: true, title: "Check Breaker, Door Switch, and Transformer", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The thermostat is hardwired but has no power, and the float switch is not tripped.' }, { type: 'header', content: 'Troubleshooting Steps' }, { type: 'list', items: ["<strong>Check Breaker:</strong> Check the circuit breaker for the indoor unit (furnace/air handler).", "<strong>Door Switch:</strong> Ensure the panel doors on the indoor unit are securely in place. Most have a safety switch that cuts all power when a door is removed.", "<strong>Check Transformer:</strong> The transformer steps high voltage down to 24V for the controls. Check for 24V output from the transformer. If there is 120V/240V going in but nothing coming out, the transformer is bad. Look for a small 3 or 5 amp fuse on the control board that may have blown."] }, { type: 'safety', content: 'Working with high voltage is dangerous. Disconnect power before removing panels.' }] },
+                        solution_check_main_breakers_disconnects: { isSolution: true, title: "Check All Breakers and Disconnects", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The thermostat has power and is calling for heating or cooling, but nothing is happening.' }, { type: 'header', content: 'Solution' }, { type: 'list', items: ["There are typically two breakers for a split system: one for the indoor unit and one for the outdoor unit. Make sure both are on.", "The outdoor unit also has a disconnect switch in a small box near the unit. Ensure it is in the ON position (the pull-out is not upside down)."] }] },
+                        solution_power_partial_failure: { isSolution: true, title: "Partial Power Failure", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'If one part of the system is running but not the other (e.g., indoor fan runs but not the outdoor unit), it is not a total power failure.' }, { type: 'header', content: 'Next Steps' }, { type: 'text', content: "Please return to the main menu and select the category that best fits the problem, such as 'System Not Cooling' or 'System Not Heating', to diagnose the specific component that is not running." }] }
+                    },
+                    'strange-noises': {
+                        start: {
+                            question: "What kind of noise is the system making?",
+                            options: [
+                                { text: 'Squealing / Screeching', nextStep: 'solution_noise_squealing' },
+                                { text: 'Grinding / Scraping', nextStep: 'solution_noise_grinding' },
+                                { text: 'Banging / Clanking', nextStep: 'solution_noise_banging' },
+                                { text: 'Rattling / Vibrating', nextStep: 'solution_noise_rattling' }
+                            ]
+                        },
+                        solution_noise_squealing: { isSolution: true, title: "Squealing or Screeching Noise", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'A high-pitched squeal often points to a motor with worn-out bearings.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Blower Motor:</strong> If the sound comes from the indoor unit, the main blower motor bearings are likely failing. The motor will need to be replaced.", "<strong>Inducer Motor:</strong> In a furnace, a squeal at the start and end of the heat cycle points to a failing inducer draft motor.", "<strong>Outdoor Fan Motor:</strong> If the sound comes from the outdoor unit, the fan motor bearings are failing."] }] },
+                        solution_noise_grinding: { isSolution: true, title: "Grinding or Scraping Noise", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'Grinding noises indicate a serious mechanical failure.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Blower Wheel:</strong> The blower wheel inside the air handler may have come loose and is scraping against the housing.", "<strong>Outdoor Fan Blade:</strong> A fan blade could be hitting a wire, ice, or the fan shroud.", "<strong>Compressor:</strong> A grinding or growling noise from the compressor is a sign of imminent failure. The compressor is the heart of the system and is a major repair."] }, { type: 'safety', content: 'Turn off the system immediately to prevent further damage if you suspect a major mechanical failure.' }] },
+                        solution_noise_banging: { isSolution: true, title: "Banging or Clanking Noise", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'Loud bangs can be startling but have a few possible sources.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Ductwork:</strong> Large rectangular ducts can make a loud banging sound as they expand and contract with temperature changes. This is often normal, but can be minimized with added supports or creasing the duct.", "<strong>Compressor Issue:</strong> A loose piston or broken internal part in the compressor can cause a loud clanking. This is a serious failure.", "<strong>Delayed Ignition:</strong> In a gas furnace, if gas builds up for a few seconds before igniting, it can cause a small 'boom' or bang. This is dangerous and indicates a problem with the igniters or burners that needs immediate attention."] }] },
+                        solution_noise_rattling: { isSolution: true, title: "Rattling or Vibrating Noise", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'Rattling is usually caused by something being loose.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Loose Panels:</strong> Check all the access panels on the indoor and outdoor units to ensure they are screwed on tightly.", "<strong>Debris in Outdoor Unit:</strong> Twigs, leaves, or other debris can get caught in the outdoor unit's fan guard and cause a rattling sound as the fan spins.", "<strong>Refrigerant Piping:</strong> Copper lines can sometimes vibrate against the house or a floor joist. This can be fixed by adding insulation or an isolator clamp."] }] }
+                    },
+                    'leaking': {
+                        start: {
+                            question: "Where is the water leaking from?",
+                            options: [
+                                { text: 'Near the Indoor Unit', nextStep: 'leak_indoor' },
+                                { text: 'Near the Outdoor Unit', nextStep: 'leak_outdoor' }
+                            ]
+                        },
+                        leak_indoor: {
+                            question: "Is the indoor evaporator coil covered in a layer of frost or ice?",
+                            yes: "solution_leak_frozen_coil",
+                            no: "solution_leak_clogged_drain"
+                        },
+                        leak_outdoor: {
+                            question: "Is the system a heat pump running in HEAT mode on a cool, damp day (above 35°F / 2°C)?",
+                            yes: "solution_leak_hp_defrost",
+                            no: "solution_leak_outdoor_other"
+                        },
+                        solution_leak_frozen_coil: { isSolution: true, title: "Frozen Evaporator Coil", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'The indoor coil is frozen, and as it melts, the drain pan overflows. A frozen coil is not the root problem; it is a symptom of another issue.' }, { type: 'header', content: 'Solution' }, { type: 'text', content: "Turn the AC off but leave the fan running to thaw the ice. A frozen coil is caused by either poor airflow or low refrigerant. Please return to the main menu and use the 'System Not Cooling' guide to find the underlying cause (likely a dirty filter or a refrigerant leak)." }] },
+                        solution_leak_clogged_drain: { isSolution: true, title: "Clogged Condensate Drain Line", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'This is the most common cause of indoor water leaks. Algae and sludge build up in the PVC drain line, causing water to back up and overflow the drain pan.' }, { type: 'header', content: 'Solution' }, { type: 'list', items: ["Find the termination of the drain line on the exterior of the house.", "Use a wet/dry shop vacuum to create a tight seal around the pipe and suck for 2-3 minutes. This will usually pull the clog out.", "Pouring a cup of distilled vinegar down the line every few months can help prevent future clogs."] }] },
+                        solution_leak_hp_defrost: { isSolution: true, title: "Normal Heat Pump Defrost Cycle", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'A puddle of water is forming under the outdoor heat pump unit in winter.' }, { type: 'header', content: 'Explanation' }, { type: 'text', content: "This is usually normal operation. In heat mode, the outdoor coil gets very cold and frost forms on it. Periodically, the heat pump will reverse itself into defrost mode to melt this frost. The resulting water drains out the bottom of the unit. You may also see steam rising from the unit during this cycle, which lasts about 5-10 minutes." }] },
+                        solution_leak_outdoor_other: { isSolution: true, title: "Other Outdoor Leaks", details: [{ type: 'header', content: 'Problem' }, { type: 'text', content: 'Water is leaking from the outdoor unit, but it is not a heat pump in defrost.' }, { type: 'header', content: 'Potential Causes' }, { type: 'list', items: ["<strong>Rainwater:</strong> After a storm, it may just be rainwater draining from the unit's casing.", "<strong>Refrigerant Leak:</strong> If the 'water' feels oily, it could be a refrigerant leak mixed with compressor oil. This is a serious issue that requires a professional."] }] }
+                    },
+                    'refrigerant-gauges': {
+                        start: {
+                            isSolution: true,
+                            title: "Refrigerant Diagnostics Menu",
+                            details: [
+                                {
+                                 question: "What would you like to do?",
+                                 options: [
+                                     { text: 'Interactive PT Calculator & Diagnosis', nextStep: 'gauge_calculator' },
+                                     { text: 'How to Check Superheat (Piston/Fixed Orifice)', nextStep: 'how_to_superheat' },
+                                     { text: 'How to Check Subcooling (TXV)', nextStep: 'how_to_subcooling' }
+                                 ]
+                               }
+                            ]
+                        },
+                        gauge_calculator: {
+                            isCalculator: true // Custom flag to trigger calculator rendering
+                        },
+                        how_to_superheat: {
+                            isSolution: true,
+                            title: "How to Check Superheat",
+                            details: [
+                                { type: 'header', content: 'Purpose'},
+                                { type: 'text', content: 'To measure the amount of heat added to the refrigerant vapor after it has fully boiled into a gas in the evaporator. This is the primary charging method for systems with a <strong>fixed orifice or piston</strong> metering device.'},
+                                { type: 'header', content: 'Tools Needed'},
+                                { type: 'list', items: ["Refrigerant gauge manifold", "Temperature clamp or probe"]},
+                                { type: 'header', content: 'Procedure'},
+                                { type: 'list', items: [
+                                    "<strong>1. Get Suction Pressure:</strong> Attach your gauges and read the low-side (blue) pressure (PSIG).",
+                                    "<strong>2. Find Saturation Temp:</strong> Use a PT chart to convert the suction pressure to its corresponding boiling/saturation temperature.",
+                                    "<strong>3. Get Suction Line Temp:</strong> Securely attach a temperature clamp to the large, insulated suction line, about 4-6 inches from the service port at the outdoor unit.",
+                                    "<strong>4. Calculate:</strong> <code class='bg-gray-200 p-1 rounded'>Suction Line Temp (°F) - Saturation Temp (°F) = Superheat</code>"
+                                ]},
+                                { type: 'header', content: 'Interpreting Results'},
+                                { type: 'list', items: [
+                                    "<strong>High Superheat (>25°F):</strong> Indicates the refrigerant is boiling off too early. The system is likely <strong>undercharged</strong> or has a restriction.",
+                                    "<strong>Low Superheat (0-5°F):</strong> Indicates the refrigerant is not boiling off completely, and liquid could be returning to the compressor. The system is likely <strong>overcharged</strong> or has poor indoor airflow (e.g., dirty filter).",
+                                    "<strong>Target Superheat:</strong> This varies based on indoor and outdoor temperatures. A common target is 10-20°F, but always consult a manufacturer's charging chart for accuracy."
+                                ]}
+                            ]
+                        },
+                        how_to_subcooling: {
+                             isSolution: true,
+                            title: "How to Check Subcooling",
+                            details: [
+                                { type: 'header', content: 'Purpose'},
+                                { type: 'text', content: 'To measure how much the refrigerant has cooled below its saturation temperature after it has fully condensed into a liquid. This is the primary charging method for systems with a <strong>TXV (Thermostatic Expansion Valve)</strong>.'},
+                                { type: 'header', content: 'Tools Needed'},
+                                { type: 'list', items: ["Refrigerant gauge manifold", "Temperature clamp or probe"]},
+                                { type: 'header', content: 'Procedure'},
+                                { type: 'list', items: [
+                                    "<strong>1. Get Liquid Pressure:</strong> Attach your gauges and read the high-side (red) pressure (PSIG).",
+                                    "<strong>2. Find Saturation Temp:</strong> Use a PT chart to convert the liquid pressure to its corresponding condensing/saturation temperature.",
+                                    "<strong>3. Get Liquid Line Temp:</strong> Securely attach a temperature clamp to the smaller, uninsulated liquid line, near the service port at the outdoor unit.",
+                                    "<strong>4. Calculate:</strong> <code class='bg-gray-200 p-1 rounded'>Saturation Temp (°F) - Liquid Line Temp (°F) = Subcooling</code>"
+                                ]},
+                                { type: 'header', content: 'Interpreting Results'},
+                                { type: 'list', items: [
+                                    "<strong>High Subcooling (>15°F):</strong> Indicates refrigerant is backing up in the condenser. The system is likely <strong>overcharged</strong> or has a restriction in the liquid line.",
+                                    "<strong>Low Subcooling (0-5°F):</strong> Indicates there is not a solid column of liquid refrigerant leaving the condenser. The system is <strong>undercharged</strong>.",
+                                    "<strong>Target Subcooling:</strong> This is typically printed on the unit's data plate. A common target is 8-12°F."
+                                ]}
+                            ]
+                        }
+                    },
+                    'airflow-checks': {
+                        start: {
+                            isSolution: true,
+                            title: "Airflow Diagnostic Checks",
+                            details: [
+                                {
+                                 question: "Which airflow test do you want to perform?",
+                                 options: [
+                                     { text: 'Heating Airflow (Temperature Rise)', nextStep: 'temp_rise_check' },
+                                     { text: 'Cooling Airflow (Delta T / Temp Drop)', nextStep: 'delta_t_check' }
+                                 ]
+                               }
+                            ]
+                        },
+                        temp_rise_check: {
+                            isSolution: true,
+                            title: "Heating Temperature Rise",
+                            details: [
+                                { type: 'header', content: 'Purpose'},
+                                { type: 'text', content: 'To determine if the furnace has proper airflow by measuring how much heat is added to the air passing through it. This ensures the heat exchanger does not overheat.'},
+                                { type: 'header', content: 'Tools Needed'},
+                                { type: 'list', items: ["A reliable thermometer or digital probes (2 is ideal)"]},
+                                { type: 'header', content: 'Procedure'},
+                                { type: 'list', items: [
+                                    "<strong>1. Find Temp Rise Range:</strong> Look on the furnace data plate/sticker for the manufacturer's specified temperature rise range (e.g., 'Temp Rise: 35-65°F').",
+                                    "<strong>2. Measure Return Air:</strong> With the furnace running for at least 10 minutes, measure the temperature of the return air just before it enters the furnace.",
+                                    "<strong>3. Measure Supply Air:</strong> Measure the temperature of the supply air in the plenum, just after the furnace heat exchanger.",
+                                    "<strong>4. Calculate:</strong> <code class='bg-gray-200 p-1 rounded'>Supply Air Temp (°F) - Return Air Temp (°F) = Temperature Rise</code>"
+                                ]},
+                                { type: 'header', content: 'Interpreting Results'},
+                                { type: 'list', items: [
+                                    "<strong>Temp Rise is TOO HIGH:</strong> If your calculated rise is above the manufacturer's range, it indicates <strong>low airflow</strong>. Check for a dirty filter, blocked vents, an undersized duct system, or a blower motor running too slow.",
+                                    "<strong>Temp Rise is TOO LOW:</strong> If your calculated rise is below the range, it could indicate <strong>excessive airflow</strong> (blower speed too high) or an issue with the heating system itself (e.g., low gas pressure)."
+                                ]}
+                            ]
+                        },
+                        delta_t_check: {
+                            isSolution: true,
+                            title: "Cooling Delta T (Temperature Drop)",
+                            details: [
+                                { type: 'header', content: 'Purpose'},
+                                { type: 'text', content: 'To determine if the air conditioning system has proper airflow and is effectively absorbing heat by measuring the temperature difference across the indoor evaporator coil.'},
+                                { type: 'header', content: 'Tools Needed'},
+                                { type: 'list', items: ["A reliable thermometer or digital probes (2 is ideal)"]},
+                                { type: 'header', content: 'Procedure'},
+                                { type: 'list', items: [
+                                    "<strong>1. Stabilize the System:</strong> Let the air conditioner run for at least 15 minutes to allow temperatures and pressures to stabilize.",
+                                    "<strong>2. Measure Return Air:</strong> Measure the temperature of the return air just before it enters the evaporator coil.",
+                                    "<strong>3. Measure Supply Air:</strong> Measure the temperature of the supply air just after the coil, before it enters the main ductwork.",
+                                    "<strong>4. Calculate:</strong> <code class='bg-gray-200 p-1 rounded'>Return Air Temp (°F) - Supply Air Temp (°F) = Delta T</code>"
+                                ]},
+                                { type: 'header', content: 'Interpreting Results (General Guide)'},
+                                { type: 'list', items: [
+                                    "<strong>Ideal Delta T:</strong> The target is typically between <strong>18°F and 22°F</strong>.",
+                                    "<strong>High Delta T (>22°F):</strong> Indicates <strong>low airflow</strong>. The air is moving too slowly across the coil, giving up too much heat. Check for a dirty filter, slow blower speed, or blocked vents. This can lead to a frozen coil.",
+                                    "<strong>Low Delta T (<18°F):</strong> Indicates the air is not giving up enough heat. This can be caused by <strong>poor cooling performance</strong> (e.g., low refrigerant charge) or <strong>excessive airflow</strong> (blower speed too high)."
+                                ]}
+                            ]
+                        }
+                    },
+                    'electrical': {
+                        start: {
+                           isSolution: true,
+                           title: "ELECTRICAL SAFETY WARNING",
+                           details: [
+                               { type: 'header', content: 'STOP! High voltage can be lethal.'},
+                               { type: 'text', content: 'Always assume a circuit is live until you have personally verified it is de-energized. This guide is for informational purposes only. You are responsible for your own safety.'},
+                               { type: 'list', items: [
+                                   "<strong>Disconnect All Power:</strong> Turn off breakers and use lockout/tagout procedures.",
+                                   "<strong>Verify Power is Off:</strong> Use a multimeter to test for voltage (L1 to L2, L1 to Ground, L2 to Ground) to ensure the circuit is dead before touching any components.",
+                                   "<strong>Use PPE:</strong> Wear appropriate Personal Protective Equipment, including insulated gloves and safety glasses.",
+                                   "<strong>One-Hand Rule:</strong> When possible, keep one hand in your pocket to prevent a current path across your heart."
+                               ]},
+                               {
+                                 question: "What do you want to learn about?",
+                                 options: [
+                                     { text: 'Basic Meter Functions', nextStep: 'basic_meter_functions' },
+                                     { text: 'Component-Specific Tests', nextStep: 'component_tests_menu' }
+                                 ]
+                               }
+                           ]
+                        },
+                        basic_meter_functions: {
+                            isSolution: true,
+                            title: "Basic Meter Functions",
+                            details: [
+                                {
+                                 question: "Which basic function do you want to review?",
+                                 options: [
+                                     { text: 'Testing Voltage (Live Circuit)', nextStep: 'voltage_menu' },
+                                     { text: 'Testing Continuity (Dead Circuit)', nextStep: 'continuity_menu' },
+                                     { text: 'Testing Resistance / Ohms (Dead Circuit)', nextStep: 'resistance_menu' }
+                                 ]
+                               }
+                            ]
+                        },
+                        component_tests_menu: {
+                            isSolution: true,
+                            title: "Component-Specific Electrical Tests",
+                             details: [
+                                {
+                                 question: "Which component do you want to test?",
+                                 options: [
+                                     { text: 'Capacitors', nextStep: 'capacitor_checks' },
+                                     { text: 'Flame Sensor Current (µA)', nextStep: 'flame_sensor_current' },
+                                     { text: 'Single-Phase Motor Windings', nextStep: 'single_phase_windings' },
+                                     { text: 'Three-Phase Motor Windings', nextStep: 'three_phase_windings' }
+                                 ]
+                               }
+                            ]
+                        },
+                        voltage_menu: {
+                           isSolution: true,
+                           title: "Testing Voltage (AC Volts ~)",
+                           details: [
+                               { type: 'header', content: 'Purpose'},
+                               { type: 'text', content: 'To verify the presence and measure the amount of electrical potential in a LIVE circuit. This is used to confirm power is available to a component.'},
+                               { type: 'header', content: 'Meter Setup'},
+                               { type: 'list', items: [
+                                  "Plug the BLACK lead into the COM port.",
+                                  "Plug the RED lead into the V/Ω port.",
+                                  "Turn the dial to AC Volts (V~ or VAC). Select a range higher than the expected voltage (e.g., 600V for line voltage)."
+                               ]},
+                               { type: 'header', content: 'Common Tests'},
+                               { type: 'list', items: [
+                                   "<strong>High Voltage (120V/240V):</strong> Test at the line side of a disconnect or contactor. A reading of 208-240V (or ~120V to ground) confirms power is reaching the unit.",
+                                   "<strong>Low Voltage (24V):</strong> Test the secondary side of the transformer (usually R and C terminals). A reading of 22-28V confirms the control circuit has power."
+                               ]},
+                               { type: 'safety', content: 'You are working with a LIVE circuit. Be extremely careful where you place your probes.'}
+                           ]
+                        },
+                        continuity_menu: {
+                           isSolution: true,
+                           title: "Testing Continuity (Audible Beep 📢)",
+                           details: [
+                               { type: 'header', content: 'Purpose'},
+                               { type: 'text', content: 'To check if there is a complete, unbroken path for electricity to flow. This test is performed on a DEAD circuit with power OFF.'},
+                               { type: 'header', content: 'Meter Setup'},
+                               { type: 'list', items: [
+                                  "Plug the BLACK lead into the COM port.",
+                                  "Plug the RED lead into the V/Ω port.",
+                                  "Turn the dial to the Continuity symbol (looks like a speaker or sound waves: 📢).",
+                                  "Touch the leads together; the meter should beep. This confirms the meter is working."
+                               ]},
+                               { type: 'header', content: 'Common Tests'},
+                               { type: 'list', items: [
+                                   "<strong>Fuses:</strong> Test across both ends of the fuse (after removing it from the circuit). A BEEP means the fuse is GOOD. No beep (meter reads OL) means the fuse is BLOWN.",
+                                   "<strong>Switches/Safeties:</strong> Test across the terminals of a switch. A BEEP means the switch is CLOSED (allowing power through). No beep means the switch is OPEN.",
+                                   "<strong>Wires:</strong> Test from one end of a wire to the other to check for internal breaks."
+                               ]},
+                               { type: 'safety', content: 'NEVER test for continuity on a live circuit. It will damage your meter and could cause injury.'}
+                           ]
+                        },
+                         resistance_menu: {
+                           isSolution: true,
+                           title: "Testing Resistance (Ohms Ω)",
+                           details: [
+                               { type: 'header', content: 'Purpose'},
+                               { type: 'text', content: 'To measure the opposition to current flow in a component. This is used to verify the health of motor windings, heaters, and sensors. Power MUST be OFF.'},
+                               { type: 'header', content: 'Meter Setup'},
+                               { type: 'list', items: [
+                                  "Plug the BLACK lead into the COM port.",
+                                  "Plug the RED lead into the V/Ω port.",
+                                  "Turn the dial to Resistance/Ohms (Ω).",
+                                  "Isolate the component you are testing by disconnecting its wires."
+                               ]},
+                               { type: 'header', content: 'Common Tests'},
+                               { type: 'list', items: [
+                                   "<strong>Motor Windings:</strong> Test between the terminals (e.g., Run to Start, Run to Common, Start to Common). You should get a low, specific Ohm reading (not 0 and not OL). A reading of OL (Over Limit) means an open winding. A reading near 0 means a short.",
+                                   "<strong>Winding to Ground:</strong> Test from each motor terminal to the copper or metal casing of the motor. The reading should be OL. Any specific Ohm reading indicates a short to ground, and the motor is bad."
+                               ]},
+                               { type: 'safety', content: 'Always disconnect the component from the circuit before testing resistance to avoid false readings from parallel paths.'}
+                           ]
+                        },
+                        capacitor_checks: {
+                            isSolution: true,
+                            title: "Testing Capacitors with a Meter",
+                            details: [
+                                { type: 'header', content: 'Purpose' },
+                                { type: 'text', content: 'To verify if a capacitor is within its rated microfarad (MFD or µF) range. A weak capacitor can cause a motor to fail to start or run poorly.' },
+                                { type: 'safety', content: 'Capacitors can store a lethal charge even when power is off. ALWAYS discharge a capacitor by carefully shorting across its terminals with an insulated screwdriver before handling.' },
+                                { type: 'header', content: 'Meter Setup' },
+                                { type: 'list', items: [
+                                    "Plug the BLACK lead into the COM port.",
+                                    "Plug the RED lead into the V/Ω/CAP port.",
+                                    "Turn the dial to the capacitance setting (MFD, µF, or a capacitor symbol).",
+                                    "Disconnect all wires from the capacitor terminals."
+                                ]},
+                                { type: 'header', content: 'Testing Procedure' },
+                                { type: 'list', items: [
+                                    "<strong>Single Capacitor:</strong> Place one probe on each terminal. The meter will take a few seconds to charge the capacitor and will then display the MFD reading.",
+                                    "<strong>Dual Run Capacitor:</strong> Test between 'C' (Common) and 'HERM' for the compressor MFD reading. Then, test between 'C' and 'FAN' for the fan MFD reading.",
+                                    "<strong>Interpreting Results:</strong> The reading should be within the tolerance printed on the capacitor, usually +/- 6%. For example, a 40 MFD capacitor should read between 37.6 and 42.4 MFD. Any reading outside this range, or a reading of OL, indicates a bad capacitor."
+                                ]}
+                            ]
+                        },
+                        flame_sensor_current: {
+                            isSolution: true,
+                            title: "Testing Flame Sensor Current (DC µA)",
+                            details: [
+                                { type: 'header', content: 'Purpose' },
+                                { type: 'text', content: 'To measure the tiny electrical current generated when a flame engulfs the flame sensor. This signal proves to the control board that a flame is present. A weak or absent signal will cause the furnace to lock out.' },
+                                { type: 'header', content: 'Meter Setup' },
+                                { type: 'list', items: [
+                                    "Plug the BLACK lead into the COM port.",
+                                    "Plug the RED lead into the mA/µA port (NOT the main Amps port).",
+                                    "Turn the dial to DC Microamps (µA with a straight line).",
+                                    "Turn off power to the furnace."
+                                ]},
+                                { type: 'header', content: 'Testing Procedure (In Series)' },
+                                { type: 'list', items: [
+                                    "Disconnect the wire from the flame sensor terminal.",
+                                    "Connect one meter lead to the flame sensor's terminal.",
+                                    "Connect the other meter lead to the wire you just disconnected.",
+                                    "You have now placed your meter IN SERIES with the flame sensor circuit. Restore power and start a call for heat.",
+                                    "Once the main burners ignite, you should see a DC µA reading on your meter."
+                                ]},
+                                { type: 'header', content: 'Interpreting Results' },
+                                { type: 'list', items: [
+                                    "<strong>Good Reading:</strong> Typically between 2-6 DC µA is considered strong. Consult manufacturer specs.",
+                                    "<strong>Poor Reading (0.5 - 1.5 µA):</strong> The furnace may operate intermittently but will likely lock out soon. This indicates a dirty flame sensor or poor flame quality.",
+                                    "<strong>No Reading (0 µA):</strong> Indicates a very dirty/failed sensor, a bad wire connection, or a poor ground connection for the furnace."
+                                ]}
+                            ]
+                        },
+                        single_phase_windings: {
+                            isSolution: true,
+                            title: "Testing Single-Phase Motor Windings",
+                            details: [
+                                { type: 'safety', content: 'Ensure power is OFF and the motor is disconnected before testing.'},
+                                { type: 'header', content: 'Purpose' },
+                                { type: 'text', content: 'To check the integrity of the internal windings of a single-phase compressor or fan motor (typically PSC type).' },
+                                { type: 'header', content: 'Testing Procedure (Resistance Ω)' },
+                                { type: 'list', items: [
+                                   "Set your meter to Ohms (Ω). Identify the Common (C), Start (S), and Run (R) terminals on the motor.",
+                                   "<strong>Step 1:</strong> Measure resistance between C and S. Record the value.",
+                                   "<strong>Step 2:</strong> Measure resistance between C and R. Record the value.",
+                                   "<strong>Step 3:</strong> Measure resistance between S and R. Record the value.",
+                                   "<strong>Step 4 (Ground Check):</strong> Measure from each terminal (C, S, R) to the metal casing of the motor. This reading MUST be OL (Over Limit)."
+                                ]},
+                                { type: 'header', content: 'Interpreting Results' },
+                                { type: 'list', items: [
+                                    "<strong>The Sum Rule:</strong> The reading from C to S plus the reading from C to R should equal the reading from S to R. (C-S + C-R = S-R). If it does, the windings are likely good.",
+                                    "<strong>Open Winding:</strong> If any reading between terminals is OL, the winding is open and the motor is bad.",
+                                    "<strong>Shorted Winding:</strong> If any reading is close to 0 Ω, the windings are shorted and the motor is bad.",
+                                    "<strong>Short to Ground:</strong> If any reading from a terminal to the casing is NOT OL, the motor is shorted to ground and is bad."
+                                ]}
+                            ]
+                        },
+                        three_phase_windings: {
+                            isSolution: true,
+                            title: "Testing Three-Phase Motor Windings",
+                            details: [
+                                { type: 'safety', content: 'Ensure power is OFF and the motor is disconnected before testing.'},
+                                { type: 'header', content: 'Purpose' },
+                                { type: 'text', content: 'To check the integrity of the internal windings of a three-phase compressor or motor.' },
+                                { type: 'header', content: 'Testing Procedure (Resistance Ω)' },
+                                { type: 'list', items: [
+                                   "Set your meter to Ohms (Ω). Identify the three terminals (e.g., T1, T2, T3).",
+                                   "<strong>Step 1:</strong> Measure resistance between T1 and T2. Record the value.",
+                                   "<strong>Step 2:</strong> Measure resistance between T1 and T3. Record the value.",
+                                   "<strong>Step 3:</strong> Measure resistance between T2 and T3. Record the value.",
+                                   "<strong>Step 4 (Ground Check):</strong> Measure from each terminal (T1, T2, T3) to the metal casing of the motor. This reading MUST be OL (Over Limit)."
+                                ]},
+                                { type: 'header', content: 'Interpreting Results' },
+                                { type: 'list', items: [
+                                    "<strong>Balance Rule:</strong> All three resistance readings (T1-T2, T1-T3, T2-T3) should be very close to each other (nearly identical). Any significant difference indicates a failing winding and the motor is bad.",
+                                    "<strong>Open Winding:</strong> If any reading between terminals is OL, the winding is open and the motor is bad.",
+                                    "<strong>Short to Ground:</strong> If any reading from a terminal to the casing is NOT OL, the motor is shorted to ground and is bad."
+                                ]}
+                            ]
+                        }
+                    }
+                },
+                ptChart: { // Pressure-Temperature Data (PSIG / °F)
+                    'r410a': { 58: 10, 63: 15, 69: 20, 75: 25, 81: 30, 88: 35, 95: 40, 102: 45, 110: 50, 118: 55, 127: 60, 256: 85, 275: 90, 295: 95, 316: 100, 338: 105, 361: 110, 385: 115, 410: 120, 436: 125, 463: 130 },
+                    'r22': { 34: 10, 37: 15, 41: 20, 45: 25, 50: 30, 54: 35, 59: 40, 64: 45, 69: 50, 74: 55, 80: 60, 155: 85, 168: 90, 181: 95, 196: 100, 211: 105, 226: 110, 243: 115, 260: 120, 278: 125, 297: 130 },
+                    'r407c': { 43: 10, 47: 15, 52: 20, 57: 25, 62: 30, 67: 35, 73: 40, 79: 45, 85: 50, 92: 55, 99: 60, 196: 85, 213: 90, 231: 95, 250: 100, 270: 105, 291: 110, 313: 115, 337: 120, 361: 125, 387: 130 }
+                },
+                referenceData: {
+                    title: 'Quick Reference Materials',
+                    content: `
+                        <h2 class="text-2xl font-bold mb-3 text-blue-800">Airflow & Refrigerant Charging</h2>
+                        <h3 class="text-xl font-bold mt-4 mb-2 text-blue-700">Cooling Delta T (Temp Drop)</h3>
+                         <ul class="list-disc pl-6 my-4 space-y-2">
+                            <li><strong>Purpose:</strong> Checks airflow & performance across the evaporator.</li>
+                            <li><strong>Formula:</strong> Return Air Temp - Supply Air Temp.</li>
+                            <li><strong>Target:</strong> 18-22°F. High Delta T = low airflow. Low Delta T = low charge or high airflow.</li>
+                        </ul>
+                        <h3 class="text-xl font-bold mt-4 mb-2 text-blue-700">Heating Temp Rise</h3>
+                         <ul class="list-disc pl-6 my-4 space-y-2">
+                            <li><strong>Purpose:</strong> Checks airflow across the heat exchanger.</li>
+                            <li><strong>Formula:</strong> Supply Air Temp - Return Air Temp.</li>
+                            <li><strong>Target:</strong> Check manufacturer's data plate (e.g., 35-65°F). High rise = low airflow.</li>
+                        </ul>
+                         <h3 class="text-xl font-bold mt-4 mb-2 text-blue-700">Superheat (Piston Systems)</h3>
+                         <ul class="list-disc pl-6 my-4 space-y-2">
+                            <li><strong>Purpose:</strong> Measures heat absorbed after boiling.</li>
+                            <li><strong>Formula:</strong> Suction Line Temp - Suction Saturation Temp.</li>
+                            <li><strong>Diagnosis:</strong> High superheat = undercharged. Low superheat = overcharged/low airflow.</li>
+                        </ul>
+                         <h3 class="text-xl font-bold mt-4 mb-2 text-blue-700">Subcooling (TXV Systems)</h3>
+                         <ul class="list-disc pl-6 my-4 space-y-2">
+                            <li><strong>Purpose:</strong> Measures liquid cooling after condensing.</li>
+                            <li><strong>Formula:</strong> Liquid Saturation Temp - Liquid Line Temp.</li>
+                            <li><strong>Diagnosis:</strong> High subcooling = overcharged. Low subcooling = undercharged. Target is on data plate (8-12°F is common).</li>
+                        </ul>
+
+                        <hr class="my-6">
+                        
+                        <h3 class="text-xl font-bold mb-2 text-blue-700">Pressure-Temperature Chart (PSIG / °F)</h3>
+                        <p>This chart shows the saturation temperature (boiling point) of refrigerants at various pressures.</p>
+                        <table class="w-full text-sm mt-4 mb-6 pt-table">
+                            <thead>
+                                <tr><th>Temp (°F)</th><th>R-410A (PSIG)</th><th>R-22 (PSIG)</th><th>R-407C (PSIG)</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td>30</td><td>81</td><td>50</td><td>62</td></tr>
+                                <tr><td>35</td><td>88</td><td>54</td><td>67</td></tr>
+                                <tr><td>40</td><td>95</td><td>59</td><td>73</td></tr>
+                                <tr><td>45</td><td>102</td><td>64</td><td>79</td></tr>
+                                <tr><td>50</td><td>110</td><td>69</td><td>85</td></tr>
+                                <tr><td>90</td><td>275</td><td>168</td><td>213</td></tr>
+                                <tr><td>95</td><td>295</td><td>181</td><td>231</td></tr>
+                                <tr><td>100</td><td>316</td><td>196</td><td>250</td></tr>
+                                <tr><td>105</td><td>338</td><td>211</td><td>270</td></tr>
+                                <tr><td>110</td><td>361</td><td>226</td><td>291</td></tr>
+                            </tbody>
+                        </table>
+                        
+                        <hr class="my-6">
+
+                        <h3 class="text-xl font-bold mb-2 text-blue-700">Capacitor Testing & Formulas</h3>
+                        <p>A capacitor should test within +/- 6% of its rated microfarad (MFD or µF) value.</p>
+                        <ul class="list-disc pl-6 my-4 space-y-2">
+                            <li><strong>Safety:</strong> Always discharge capacitors before handling.</li>
+                            <li><strong>Testing:</strong> Use a multimeter with a capacitance (µF) setting. Disconnect wires and test across terminals. For dual caps, test from C to FAN and C to HERM.</li>
+                        </ul>
+                        
+                        <hr class="my-6">
+
+                         <h3 class="text-xl font-bold mt-6 mb-2 text-blue-700">Common Wiring Colors</h3>
+                        <p>Note: Always verify with a wiring diagram. These are common conventions, not strict codes.</p>
+                         <ul class="list-disc pl-6 my-4 space-y-2">
+                            <li><strong class="text-red-600">Red (R):</strong> 24V Hot from transformer.</li>
+                            <li><strong class="text-yellow-500">Yellow (Y):</strong> Compressor contactor (Cooling).</li>
+                            <li><strong class="text-green-600">Green (G):</strong> Indoor Fan.</li>
+                            <li><strong class="text-orange-500">Orange (O/B):</strong> Reversing Valve (for heat pumps).</li>
+                            <li><strong class="text-white">White (W):</strong> Heat (Gas valve, electric heat strips).</li>
+                            <li><strong class="text-blue-800">Blue/Black (C):</strong> 24V Common.</li>
+                        </ul>
+
+                        <hr class="my-6">
+
+                        <h2 class="text-2xl font-bold mb-3 text-blue-800">Component Electrical Checks Summary</h2>
+                        
+                        <h3 class="text-xl font-bold mt-4 mb-2 text-blue-700">Flame Sensor (DC µA) - LIVE Circuit</h3>
+                        <ul class="list-disc pl-6 my-4 space-y-2">
+                            <li><strong>Purpose:</strong> Proves flame is present.</li>
+                            <li><strong>How:</strong> Meter set to DC µA. Place meter in series with the flame sensor wire.</li>
+                            <li><strong>Result:</strong> Good reading is typically 2-6 µA. Low reading means dirty sensor.</li>
+                        </ul>
+                        
+                        <h3 class="text-xl font-bold mt-4 mb-2 text-blue-700">Single-Phase Windings (Ω) - DEAD Circuit</h3>
+                        <ul class="list-disc pl-6 my-4 space-y-2">
+                            <li><strong>Rule:</strong> (C to S) + (C to R) = (S to R).</li>
+                            <li><strong>Ground Check:</strong> All terminals to motor casing must read OL.</li>
+                        </ul>
+
+                        <h3 class="text-xl font-bold mt-4 mb-2 text-blue-700">Three-Phase Windings (Ω) - DEAD Circuit</h3>
+                        <ul class="list-disc pl-6 my-4 space-y-2">
+                            <li><strong>Rule:</strong> All three phase-to-phase readings (T1-T2, T1-T3, T2-T3) must be balanced (nearly identical).</li>
+                            <li><strong>Ground Check:</strong> All terminals to motor casing must read OL.</li>
+                        </ul>
+                    `
+                },
+                currentState: {
+                    category: null,
+                    stepId: null,
+                }
+            },
+
+            // --- INITIALIZATION ---
+            init() {
+                this.cacheDOMElements();
+                this.renderCategories();
+                this.bindEvents();
+                this.dom.troubleshootingContent.addEventListener('input', (e) => {
+                    if (e.target.closest('#gauge-calculator-form')) {
+                        this.calculateGaugeDiagnosis();
+                    }
+                });
+                 this.dom.troubleshootingContent.addEventListener('change', (e) => {
+                    if (e.target.closest('#gauge-calculator-form')) {
+                        this.calculateGaugeDiagnosis();
+                    }
+                });
+            },
+
+            // --- DOM ELEMENT CACHING ---
+            cacheDOMElements() {
+                this.dom = {
+                    homeScreen: document.getElementById('home-screen'),
+                    troubleshootingScreen: document.getElementById('troubleshooting-screen'),
+                    referenceScreen: document.getElementById('reference-screen'),
+                    categoriesGrid: document.getElementById('categories-grid'),
+                    troubleshootingContent: document.getElementById('troubleshooting-content'),
+                    troubleshootingTitle: document.getElementById('troubleshooting-title'),
+                    referenceContent: document.getElementById('reference-content'),
+                    referenceTitle: document.getElementById('reference-title'),
+                    homeButton: document.getElementById('home-button'),
+                    homeButtonRef: document.getElementById('home-button-ref'),
+                    searchBar: document.getElementById('search-bar')
+                };
+            },
+
+            // --- EVENT BINDING ---
+            bindEvents() {
+                this.dom.categoriesGrid.addEventListener('click', (e) => {
+                    const card = e.target.closest('.troubleshooting-card');
+                    if (card && card.dataset.category) {
+                        this.startTroubleshooting(card.dataset.category);
+                    }
+                });
+                
+                this.dom.troubleshootingContent.addEventListener('click', (e) => {
+                    const button = e.target.closest('button');
+                    if (button && button.dataset.nextStep) {
+                        this.navigateToStep(button.dataset.nextStep);
+                    }
+                });
+
+                this.dom.homeButton.addEventListener('click', () => this.showHomeScreen());
+                this.dom.homeButtonRef.addEventListener('click', () => this.showHomeScreen());
+                this.dom.searchBar.addEventListener('input', (e) => this.filterCategories(e.target.value));
+            },
+
+            // --- RENDERING & UI ---
+            renderCategories() {
+                this.dom.categoriesGrid.innerHTML = '';
+                for (const key in this.data.categories) {
+                    const category = this.data.categories[key];
+                    const card = `
+                        <div class="troubleshooting-card bg-white p-6 rounded-lg shadow-md cursor-pointer flex flex-col" data-category="${key}">
+                            <div class="text-4xl mb-3">${category.icon}</div>
+                            <h3 class="text-xl font-bold mb-2 text-blue-700">${category.title}</h3>
+                            <p class="text-gray-600 flex-grow">${category.description}</p>
+                        </div>
+                    `;
+                    this.dom.categoriesGrid.innerHTML += card;
+                }
+            },
+            
+            filterCategories(searchTerm) {
+                const term = searchTerm.toLowerCase();
+                const cards = this.dom.categoriesGrid.children;
+                for(let card of cards) {
+                    const title = card.querySelector('h3').textContent.toLowerCase();
+                    const description = card.querySelector('p').textContent.toLowerCase();
+                    if(title.includes(term) || description.includes(term)) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                }
+            },
+
+            showHomeScreen() {
+                this.dom.homeScreen.classList.remove('hidden');
+                this.dom.troubleshootingScreen.classList.add('hidden');
+                this.dom.referenceScreen.classList.add('hidden');
+                this.data.currentState.category = null;
+                this.data.currentState.stepId = null;
+            },
+            
+            startTroubleshooting(category) {
+                this.data.currentState.category = category;
+                
+                if (category === 'reference') {
+                    this.dom.homeScreen.classList.add('hidden');
+                    this.dom.referenceScreen.classList.remove('hidden');
+                    this.dom.referenceTitle.innerText = this.data.referenceData.title;
+                    this.dom.referenceContent.innerHTML = this.data.referenceData.content;
+                } else {
+                    this.dom.homeScreen.classList.add('hidden');
+                    this.dom.troubleshootingScreen.classList.remove('hidden');
+                    this.dom.troubleshootingTitle.innerText = this.data.categories[category].title;
+                    this.navigateToStep('start');
+                }
+            },
+            
+            navigateToStep(stepId) {
+                this.data.currentState.stepId = stepId;
+
+                // Special case for cross-category jump
+                if (stepId === 'flame_sensor_current') {
+                    this.data.currentState.category = 'electrical';
+                }
+                const stepData = this.data.troubleshootingTree[this.data.currentState.category][stepId];
+                
+                if (stepData) {
+                    if (stepData.isSolution) {
+                        this.renderSolution(stepData);
+                    } else if (stepData.isCalculator) {
+                        this.renderGaugeCalculator();
+                    }
+                    else {
+                        this.renderQuestion(stepData);
+                    }
+                } else {
+                    this.renderError(`Step ID "${stepId}" not found.`);
+                }
+            },
+
+            renderQuestion(stepData) {
+                let buttonsHtml = '';
+                if (stepData.options) {
+                    // Custom buttons for choices
+                    buttonsHtml = stepData.options.map(option => 
+                        `<button data-next-step="${option.nextStep}" class="w-full bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition duration-300 mb-3">${option.text}</button>`
+                    ).join('');
+                     this.dom.troubleshootingContent.innerHTML = `
+                        <p class="text-lg mb-6">${stepData.question}</p>
+                        <div class="flex flex-col">
+                            ${buttonsHtml}
+                        </div>
+                    `;
+                } else {
+                    // Standard Yes/No buttons
+                    this.dom.troubleshootingContent.innerHTML = `
+                        <p class="text-lg mb-6">${stepData.question}</p>
+                        <div class="flex space-x-4">
+                            <button data-next-step="${stepData.yes}" class="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition duration-300">Yes</button>
+                            <button data-next-step="${stepData.no}" class="w-full bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 transition duration-300">No</button>
+                        </div>
+                    `;
+                }
+            },
+            
+            renderSolution(solutionData) {
+                let html = `<h3 class="text-2xl font-bold mb-4 text-blue-800">${solutionData.title}</h3>`;
+                solutionData.details.forEach(item => {
+                    if (item.question && item.options) { // Check if the item is a question
+                        html += `<p class="text-lg my-6 font-semibold">${item.question}</p>`;
+                        html += '<div class="flex flex-col">';
+                        html += item.options.map(option =>
+                            `<button data-next-step="${option.nextStep}" class="w-full bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition duration-300 mb-3">${option.text}</button>`
+                        ).join('');
+                        html += '</div>';
+                    } else {
+                        switch (item.type) {
+                            case 'header':
+                                html += `<h4 class="text-lg font-semibold mt-4 mb-2">${item.content}</h4>`;
+                                break;
+                            case 'text':
+                                html += `<p class="mb-3">${item.content}</p>`;
+                                break;
+                            case 'list':
+                                html += `<ul class="list-disc pl-6 space-y-2 mb-3">`;
+                                item.items.forEach(li => html += `<li>${li}</li>`);
+                                html += `</ul>`;
+                                break;
+                            case 'safety':
+                                html += `
+                                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mt-4 rounded-r-lg">
+                                        <p class="font-bold">Safety Warning</p>
+                                        <p>${item.content}</p>
+                                    </div>
+                                `;
+                                break;
+                        }
+                    }
+                });
+                this.dom.troubleshootingContent.innerHTML = html;
+            },
+
+            renderGaugeCalculator() {
+                this.dom.troubleshootingContent.innerHTML = `
+                    <form id="gauge-calculator-form" class="space-y-4">
+                        <div>
+                            <label for="refrigerant-type" class="block font-medium mb-1">Refrigerant Type:</label>
+                            <select id="refrigerant-type" class="w-full p-2 border rounded-md">
+                                <option value="r410a">R-410A</option>
+                                <option value="r22">R-22</option>
+                                <option value="r407c">R-407C</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="low-pressure" class="block font-medium mb-1">Low Side Pressure (PSIG):</label>
+                                <input type="number" id="low-pressure" class="w-full p-2 border rounded-md" placeholder="e.g., 118">
+                            </div>
+                            <div>
+                                <label for="high-pressure" class="block font-medium mb-1">High Side Pressure (PSIG):</label>
+                                <input type="number" id="high-pressure" class="w-full p-2 border rounded-md" placeholder="e.g., 361">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="suction-temp" class="block font-medium mb-1">Suction Line Temp (°F):</label>
+                                <input type="number" id="suction-temp" class="w-full p-2 border rounded-md" placeholder="e.g., 65">
+                            </div>
+                             <div>
+                                <label for="liquid-temp" class="block font-medium mb-1">Liquid Line Temp (°F):</label>
+                                <input type="number" id="liquid-temp" class="w-full p-2 border rounded-md" placeholder="e.g., 98">
+                            </div>
+                        </div>
+                    </form>
+                    <div id="gauge-results" class="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <h3 class="text-xl font-bold mb-2">Diagnosis</h3>
+                        <div id="diagnosis-output" class="space-y-2">
+                             <p class="text-gray-500">Enter values above to see diagnosis.</p>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            calculateGaugeDiagnosis() {
+                const refrigerant = document.getElementById('refrigerant-type').value;
+                const lowPressure = parseFloat(document.getElementById('low-pressure').value);
+                const highPressure = parseFloat(document.getElementById('high-pressure').value);
+                const suctionTemp = parseFloat(document.getElementById('suction-temp').value);
+                const liquidTemp = parseFloat(document.getElementById('liquid-temp').value);
+                const outputDiv = document.getElementById('diagnosis-output');
+
+                const ptData = this.data.ptChart[refrigerant];
+                if (!ptData) {
+                    outputDiv.innerHTML = `<p class="text-red-500">Error: No PT data for selected refrigerant.</p>`;
+                    return;
+                }
+
+                let results = '';
+                
+                // Superheat Calculation
+                if (!isNaN(lowPressure) && !isNaN(suctionTemp)) {
+                    const lowSatTemp = this.getSatTemp(lowPressure, ptData);
+                    if (lowSatTemp !== null) {
+                        const superheat = suctionTemp - lowSatTemp;
+                        let shDiagnosis = '';
+                        if (superheat < 5) shDiagnosis = '<span class="font-bold text-yellow-600">Low Superheat:</span> Possible overcharge or low indoor airflow.';
+                        else if (superheat > 25) shDiagnosis = '<span class="font-bold text-red-600">High Superheat:</span> Likely undercharged or has a restriction.';
+                        else shDiagnosis = '<span class="font-bold text-green-600">Normal Superheat:</span> Charge appears okay for a piston system.';
+                        results += `<p><strong>Superheat:</strong> ${superheat.toFixed(1)}°F. ${shDiagnosis}</p>`;
+                    } else {
+                         results += `<p><strong>Superheat:</strong> Low side pressure out of range for calculation.</p>`;
+                    }
+                }
+
+                // Subcooling Calculation
+                if (!isNaN(highPressure) && !isNaN(liquidTemp)) {
+                    const highSatTemp = this.getSatTemp(highPressure, ptData);
+                    if (highSatTemp !== null) {
+                        const subcooling = highSatTemp - liquidTemp;
+                        let scDiagnosis = '';
+                        if (subcooling < 5) scDiagnosis = '<span class="font-bold text-red-600">Low Subcooling:</span> System is likely undercharged.';
+                        else if (subcooling > 15) scDiagnosis = '<span class="font-bold text-yellow-600">High Subcooling:</span> Possible overcharge or restriction.';
+                        else scDiagnosis = '<span class="font-bold text-green-600">Normal Subcooling:</span> Charge appears okay for a TXV system.';
+                        results += `<p><strong>Subcooling:</strong> ${subcooling.toFixed(1)}°F. ${scDiagnosis}</p>`;
+                    } else {
+                         results += `<p><strong>Subcooling:</strong> High side pressure out of range for calculation.</p>`;
+                    }
+                }
+
+                outputDiv.innerHTML = results || `<p class="text-gray-500">Enter values above to see diagnosis.</p>`;
+            },
+            
+            getSatTemp(pressure, ptData) {
+                const pressures = Object.keys(ptData).map(p => parseInt(p));
+                // Find the two closest pressure points
+                let lowerP = null;
+                let upperP = null;
+                for(const p of pressures) {
+                    if (p <= pressure && (lowerP === null || p > lowerP)) {
+                        lowerP = p;
+                    }
+                    if (p >= pressure && (upperP === null || p < upperP)) {
+                        upperP = p;
+                    }
+                }
+                
+                if (lowerP === null || upperP === null) return null; // Out of range
+                if (lowerP === upperP) return ptData[lowerP]; // Exact match
+
+                // Linear interpolation
+                const lowerT = ptData[lowerP];
+                const upperT = ptData[upperP];
+                const pressureRange = upperP - lowerP;
+                const tempRange = upperT - lowerT;
+                const pressureDiff = pressure - lowerP;
+                
+                const temp = lowerT + (pressureDiff / pressureRange) * tempRange;
+                return temp;
+            },
+
+            renderError(message) {
+                 this.dom.troubleshootingContent.innerHTML = `
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg">
+                        <p class="font-bold">Error</p>
+                        <p>${message}</p>
+                    </div>
+                `;
+            }
+        };
+
+        // --- RUN APP ---
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>
+
